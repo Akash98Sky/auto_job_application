@@ -1,18 +1,11 @@
 import asyncio
+from browser_use import Browser
 from dotenv import load_dotenv
-from logger_config import setup_logger
+
+from app.job_agent import JobApplicationAgent
+from app.logger_config import setup_logger
 
 logger = setup_logger()
-
-# Ensure browser_use is installed and imported correctly
-try:
-    from browser_use import Browser
-except ImportError:
-    print("browser-use package not found. Please make sure to install dependencies.")
-    import sys
-    sys.exit(1)
-
-from job_agent import JobApplicationAgent
 
 load_dotenv()
 

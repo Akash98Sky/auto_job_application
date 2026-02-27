@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from pypdf import PdfReader
 from langchain_core.prompts import PromptTemplate

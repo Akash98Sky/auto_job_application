@@ -1,7 +1,8 @@
 from browser_use import Agent, Browser, Controller
 from browser_use.llm import ChatGroq
-from knowledge_base import KnowledgeBase
-from resume_manager import ResumeManager
+
+from .knowledge_base import KnowledgeBase
+from .resume_manager import ResumeManager
 
 class JobApplicationAgent:
     def __init__(self, browser: Browser, model_name="openai/gpt-oss-120b", temp=0):
