@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Browser
+profile/**
+
+# Environment variables
+.env
+
+# User data
+user_data/knowledge_base/*.txt
+user_data/resumes/*.pdf

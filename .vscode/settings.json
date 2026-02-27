@@ -1,0 +1,5 @@
+{
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.executeInFileDir": true,
+    "editor.semanticHighlighting.enabled": true
+}
