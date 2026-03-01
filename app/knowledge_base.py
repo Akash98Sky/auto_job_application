@@ -2,9 +2,13 @@ from mem0 import Memory
 from mem0.configs.base import MemoryConfig, LlmConfig, EmbedderConfig, RerankerConfig, VectorStoreConfig
 from langchain_cohere import CohereEmbeddings
 from pathlib import Path
+from .logger_config import get_logger
+from .config import KNOWLEDGE_BASE_DIR, MEM0_MODEL_NAME
+
+logger = get_logger(__name__)
 
 class KnowledgeBase:
-    def __init__(self, data_dir: str = "user_data/knowledge_base"):
+    def __init__(self, data_dir: str = KNOWLEDGE_BASE_DIR):
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
         # Ensure GROQ_API_KEY is in the environment.
@@ -18,7 +22,7 @@ class KnowledgeBase:
             llm=LlmConfig(
                 provider="groq",
                 config={
-                    "model": "llama-3.3-70b-versatile"
+                    "model": MEM0_MODEL_NAME
                 }
             ),
             embedder=EmbedderConfig(
@@ -26,7 +30,7 @@ class KnowledgeBase:
                 config={
                     "model": CohereEmbeddings(
                         model="embed-english-v3.0"
-                    )
+                    ) # type: ignore
                 }
             ),
             reranker=RerankerConfig(
@@ -40,7 +44,7 @@ class KnowledgeBase:
 
     def load_from_directory(self):
         """Loads all text and markdown files from the data directory into mem0."""
-        print(f"Loading knowledge base from {self.data_dir}...")
+        logger.info(f"Loading knowledge base from {self.data_dir}...")
         for file_path in self.data_dir.glob("*.*"):
             if file_path.suffix in [".txt", ".md"]:
                 try:
@@ -48,9 +52,9 @@ class KnowledgeBase:
                         content = f.read()
                         # Add document content to memory associated with the application context
                         self.memory.add(content, user_id="applicant", metadata={"source": file_path.name})
-                        print(f"Loaded: {file_path.name}")
+                        logger.info(f"Loaded: {file_path.name}")
                 except Exception as e:
-                    print(f"Failed to load {file_path.name}: {e}")
+                    logger.error(f"Failed to load {file_path.name}: {e}")
 
     def query(self, question: str) -> str:
         """Retrieves and formats answers from the knowledge base based on the given question."""
@@ -68,5 +72,5 @@ if __name__ == "__main__":
     # Test the KnowledgeBase
     kb = KnowledgeBase()
     kb.load_from_directory()
-    print("Test Query: What are the applicant's main skills?")
-    print(kb.query("What are the applicant's main skills?"))
+    logger.info("Test Query: What are the applicant's main skills?")
+    logger.info(kb.query("What are the applicant's main skills?"))

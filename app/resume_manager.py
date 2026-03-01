@@ -1,19 +1,23 @@
 from pathlib import Path
+from langchain_core.language_models import BaseChatModel
 from pypdf import PdfReader
 from langchain_core.prompts import PromptTemplate
-from langchain_groq import ChatGroq
+from .logger_config import get_logger
+from .config import RESUMES_DIR, RESUME_MODEL_NAME
+
+logger = get_logger(__name__)
 
 class ResumeManager:
-    def __init__(self, resumes_dir: str = "user_data/resumes", llm=None):
+    def __init__(self, resumes_dir: str = RESUMES_DIR, llm: BaseChatModel | None = None):
         self.resumes_dir = Path(resumes_dir)
         self.resumes_dir.mkdir(parents=True, exist_ok=True)
         self.resumes = {}  # Make a dictionary mapping path to extracted text
         # Initialize an LLM for ranking, or use the one provided
-        self.llm = llm or ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+        self.llm = llm or ChatGroq(model=RESUME_MODEL_NAME, temperature=0)
 
     def load_resumes(self):
         """Scans the resumes directory and extracts text from all PDF files."""
-        print(f"Loading resumes from {self.resumes_dir}...")
+        logger.info(f"Loading resumes from {self.resumes_dir}...")
         for pdf_path in self.data_dir.glob("*.pdf"):
             try:
                 reader = PdfReader(pdf_path)
@@ -23,9 +27,9 @@ class ResumeManager:
                     if extracted:
                         text += extracted + "\n"
                 self.resumes[str(pdf_path)] = text
-                print(f"Loaded resume: {pdf_path.name}")
+                logger.info(f"Loaded resume: {pdf_path.name}")
             except Exception as e:
-                print(f"Failed to load resume {pdf_path.name}: {e}")
+                logger.error(f"Failed to load resume {pdf_path.name}: {e}")
 
     @property
     def data_dir(self):
@@ -37,12 +41,11 @@ class ResumeManager:
         Returns the absolute file path to the best-matching resume PDF.
         """
         if not self.resumes:
-            print("No resumes found.")
-            return None
+            raise ValueError("No resumes loaded. Please load resumes before calling this method.")
         
         if len(self.resumes) == 1:
             best_resume = list(self.resumes.keys())[0]
-            print(f"Only one resume found: {Path(best_resume).name}")
+            logger.info(f"Only one resume found: {Path(best_resume).name}")
             return str(Path(best_resume).absolute())
         
         # Rank resumes against job description using LLM
@@ -71,18 +74,18 @@ Output ONLY the "Resume ID" value of the best matching resume, nothing else. No 
                 "resumes_text": resumes_text
             })
             
-            selected_id_str = result.content.strip()
-            print(f"LLM Selected Resume ID: {selected_id_str}")
+            selected_id_str = str(result.content).strip()
+            logger.info(f"LLM Selected Resume ID: {selected_id_str}")
             
             try:
                 selected_id = int(selected_id_str)
                 selected_path = list(self.resumes.keys())[selected_id]
                 return str(Path(selected_path).absolute())
             except ValueError:
-                 print(f"Could not parse selected ID: {selected_id_str}. Falling back to default.")
+                 logger.warning(f"Could not parse selected ID: {selected_id_str}. Falling back to default.")
                  return str(Path(list(self.resumes.keys())[0]).absolute())
         except Exception as e:
-             print(f"Error ranking resumes: {e}")
+             logger.error(f"Error ranking resumes: {e}")
              return str(Path(list(self.resumes.keys())[0]).absolute())
 
 
@@ -95,4 +98,4 @@ if __name__ == "__main__":
     
     # Needs a sample resume to actually test, but this initializes successfully
     best_resume_path = rm.get_best_resume("Need a Python Django Developer with AWS experience")
-    print(f"Best resume selected: {best_resume_path}")
+    logger.info(f"Best resume selected: {best_resume_path}")

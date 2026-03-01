@@ -1,11 +1,16 @@
 from browser_use import Agent, Browser, Controller
-from browser_use.llm import ChatGroq
+from browser_use.llm import ChatGroq, UserMessage
 
 from .knowledge_base import KnowledgeBase
+from .models.llm_responses import JobFitAnalysis
 from .resume_manager import ResumeManager
+from .logger_config import get_logger
+from .config import AGENT_MODEL_NAME, RESUMES_DIR
+
+logger = get_logger(__name__)
 
 class JobApplicationAgent:
-    def __init__(self, browser: Browser, model_name="openai/gpt-oss-120b", temp=0):
+    def __init__(self, browser: Browser, model_name=AGENT_MODEL_NAME, temp=0):
         # Setup resources
         self.browser = browser
         self.llm = ChatGroq(model=model_name, temperature=temp)
@@ -14,7 +19,7 @@ class JobApplicationAgent:
         self.knowledge_base = KnowledgeBase()
         self.knowledge_base.load_from_directory()
 
-        self.resume_manager = ResumeManager(llm=self.llm)
+        self.resume_manager = ResumeManager(resumes_dir=RESUMES_DIR, llm=self.llm)
         self.resume_manager.load_resumes()
 
     def _build_controller(self) -> Controller:
@@ -42,19 +47,117 @@ class JobApplicationAgent:
 
         return controller
 
+    async def analyze_job_fit(self, job_description: str) -> JobFitAnalysis:
+        """
+        Analyzes if the job is a good fit for the applicant based on their knowledge base.
+        Returns a JobFitAnalysis object with 'is_fit' (bool) and 'reasoning' (str).
+        """
+        logger.info("Analyzing job fit...")
+        
+        # Get a summary of the applicant's profile from the knowledge base
+        profile_summary = self.knowledge_base.query("Provide a comprehensive summary of the applicant's professional background, skills, and experience.")
+        
+        prompt = f"""
+        You are an expert career advisor. Your task is to determine if a job is a good fit for an applicant.
+        
+        Applicant Profile Summary:
+        {profile_summary}
+        
+        Job Description:
+        {job_description}
+        
+        Evaluate the fit based on:
+        1. Required skills vs applicant's skills.
+        2. Experience level required vs applicant's experience.
+        3. Core responsibilities vs applicant's background.
+        
+        Return your response in the following JSON format:
+        {{
+            "is_fit": boolean,
+            "reasoning": "A brief explanation of why this is or isn't a good fit."
+        }}
+        """
+        
+        try:
+            response = await self.llm.ainvoke(
+                messages=[UserMessage(content=prompt)],
+                output_format=JobFitAnalysis,
+            )
+            
+            result = response.completion
+            logger.info(f"Fit analysis result: {result.is_fit} - {result.reasoning}")
+            return result
+        except Exception as e:
+            logger.error(f"Error analyzing job fit: {e}")
+            return JobFitAnalysis(is_fit=True, reasoning="Defaulting to True due to analysis error.")
+
+    async def run_job_search(self, query: str, limit: int = 5) -> list[str]:
+        """
+        Uses browser-use to search for jobs based on a query and returns a list of job URLs.
+        """
+        logger.info(f"Searching for jobs with query: {query}")
+        
+        search_instructions = f"""
+        1. Go to Google and search for "{query} jobs".
+        2. Look for job listings on sites like LinkedIn, Indeed, Greenhouse, Lever, or company career pages.
+        3. Extract the direct application URLs for at least {limit} relevant job postings.
+        4. Return ONLY a comma-separated list of URLs.
+        """
+        
+        search_agent = Agent(
+            task=search_instructions,
+            llm=self.llm,
+            browser=self.browser,
+        )
+        
+        history = await search_agent.run()
+        result = history.final_result() if history.is_successful() else ""
+        
+        if not result:
+            logger.warning("No job URLs found during search.")
+            return []
+            
+        urls = [url.strip() for url in result.split(",") if url.strip().startswith("http")]
+        logger.info(f"Found {len(urls)} job URLs.")
+        return urls[:limit]
+
     async def apply_to_job(self, job_url: str):
         """
         Navigates to the job URL, uses the ResumeManager to select the best resume,
         and lets the agent query the KnowledgeBase via a tool call when it needs facts.
         """
-        print(f"Applying to job at {job_url}")
+        logger.info(f"Applying to job at {job_url}")
 
-        # Select the most relevant resume (simple fallback for now)
-        best_resume_path = self.resume_manager.get_best_resume("General Job Description")
-        print(f"Using resume: {best_resume_path}")
+        # Create an initial agent just to extract the job description
+        extract_instructions = f"Go to {job_url} and read the entire page. Extract the core job description, requirements, and responsibilities. Return ONLY this extracted text."
+        
+        logger.info("Extracting job description from the page...")
+        extract_agent = Agent(
+            task=extract_instructions,
+            llm=self.llm,
+            browser=self.browser,
+        )
+        extract_history = await extract_agent.run()
+        
+        # Get the final result from the history
+        job_description = extract_history.final_result() if extract_history.is_successful() else "General Job Description"
+        
+        if not job_description:
+            job_description = "General Job Description"
+            
+        logger.info(f"Extracted job description length: {len(job_description)} characters")
+    
+        # Select the most relevant resume based on extracted description
+        best_resume_path = self.resume_manager.get_best_resume(job_description)
+        
+        if not best_resume_path:
+            logger.error("No suitable resume found.")
+            return None
+            
+        logger.info(f"Using resume: {best_resume_path}")
 
         base_instructions = f"""
-You are an autonomous AI applying for a job at {job_url}.
+You are an autonomous AI applying for a job at {job_url}. The page is already loaded.
 
 If the application requires a resume upload, click the upload button and select
 the file at this absolute path: {best_resume_path}.
@@ -83,14 +186,15 @@ Do not submit the form until all required fields are filled and a resume is atta
 if __name__ == "__main__":
     from dotenv import load_dotenv
     import asyncio
+    from .config import BROWSER_EXECUTABLE_PATH, BROWSER_USER_DATA_DIR, BROWSER_PROFILE_DIR
     
     load_dotenv()
     
     # Needs a real browser setup to test
     browser = Browser(
-        executable_path='C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-        user_data_dir='./profile',
-        profile_directory='Default',
+        executable_path=BROWSER_EXECUTABLE_PATH,
+        user_data_dir=BROWSER_USER_DATA_DIR,
+        profile_directory=BROWSER_PROFILE_DIR,
         wait_between_actions=1000
     )
     
