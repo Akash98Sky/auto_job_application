@@ -6,12 +6,13 @@ from unittest.mock import patch, MagicMock
 # Add the project root to the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.knowledge_base import KnowledgeBase
+from app.agents.knowledge_base_agent import KnowledgeBaseAgent
 
-def test_knowledge_base_query():
-    """Test that the knowledge base can retrieve facts."""
+
+def test_knowledge_base_agent_query():
+    """Test that the knowledge base agent can retrieve facts."""
     # Initialize knowledge base
-    kb = KnowledgeBase()
+    kb = KnowledgeBaseAgent()
     kb.load_from_directory()
 
     # Test query
@@ -24,30 +25,40 @@ def test_knowledge_base_query():
     if "No relevant information" in result:
         print("Info: Knowledge base returned 'No relevant information' message as expected")
 
-def test_knowledge_base_query_empty():
-    """Test knowledge base behavior when no files are present."""
-    with patch('os.listdir') as mock_listdir:
-        mock_listdir.return_value = []
-        kb = KnowledgeBase()
-        result = kb.query("What are the applicant's skills?")
-        assert "No relevant information" in result
 
-def test_knowledge_base_load():
+def test_knowledge_base_agent_load():
     """Test that the knowledge base loads files from directory."""
-    kb = KnowledgeBase()
+    kb = KnowledgeBaseAgent()
     # Should not raise an exception
     kb.load_from_directory()
     # If we get here without exceptions, the test passes
     assert True
 
-def test_knowledge_base_with_test_files():
-    """Test knowledge base with mock test files."""
-    with patch('os.listdir') as mock_listdir, \
-         patch('builtins.open', MagicMock()) as mock_open:
-        mock_listdir.return_value = ['test1.txt', 'test2.md']
-        mock_open.return_value.__enter__.return_value.read.return_value = "Sample knowledge content"
-        
-        kb = KnowledgeBase()
-        kb.load_from_directory()
-        result = kb.query("Sample query")
+
+@pytest.mark.asyncio
+async def test_knowledge_base_agent_query_mocked():
+    """Test knowledge base query with mocked memory."""
+    with patch('app.agents.knowledge_base_agent.Memory') as mock_memory_class:
+        mock_memory = MagicMock()
+        mock_memory.search.return_value = ["Skill: Python", "Skill: Django"]
+        mock_memory_class.return_value = mock_memory
+
+        kb = KnowledgeBaseAgent()
+        result = kb.query("What are the applicant's skills?")
+
         assert isinstance(result, str)
+        assert "Skill: Python" in result
+        mock_memory.search.assert_called_once_with("What are the applicant's skills?", user_id="applicant", limit=5)
+
+
+def test_knowledge_base_agent_with_empty_search():
+    """Test knowledge base when search returns empty results."""
+    with patch('app.agents.knowledge_base_agent.Memory') as mock_memory_class:
+        mock_memory = MagicMock()
+        mock_memory.search.return_value = []
+        mock_memory_class.return_value = mock_memory
+
+        kb = KnowledgeBaseAgent()
+        result = kb.query("Some query")
+
+        assert "No relevant information" in result
