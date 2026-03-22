@@ -17,4 +17,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+    "taskipy>=1.2.1",
 ]
+
+[tool.taskipy.tasks]
+test = "pytest"
+apply = "python main.py"

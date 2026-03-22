@@ -18,3 +18,4 @@ profile/**
 # User data
 user_data/knowledge_base/*.txt
 user_data/resumes/*.pdf
+memory_history.db

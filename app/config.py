@@ -12,7 +12,18 @@ BROWSER_EXECUTABLE_PATH = os.getenv("BROWSER_EXECUTABLE_PATH", "C:\\Program File
 BROWSER_USER_DATA_DIR = os.getenv("BROWSER_USER_DATA_DIR", "./profile")
 BROWSER_PROFILE_DIR = os.getenv("BROWSER_PROFILE_DIR", "Default")
 
-# Model Configuration
-AGENT_MODEL_NAME = os.getenv("AGENT_MODEL_NAME", "meta-llama/llama-4-scout-17b-16e-instruct")
-MEM0_MODEL_NAME = os.getenv("MEM0_MODEL_NAME", "openai/gpt-oss-120b")
-RESUME_MODEL_NAME = os.getenv("RESUME_MODEL_NAME", "llama-3.1-8b-instant")
+# Groq Model Configuration
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+BROWSER_AGENT_GROQ_MODEL = os.getenv("BROWSER_AGENT_GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+RESUME_AGENT_GROQ_MODEL = os.getenv("RESUME_AGENT_GROQ_MODEL", "llama-3.1-8b-instant")
+MEM0_LLM_GROQ_MODEL = os.getenv("MEM0_LLM_GROQ_MODEL", "openai/gpt-oss-120b")
+
+# Cohere Model Configuration
+COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
+MEM0_EMBED_COHERE_MODEL = os.getenv("MEM0_EMBED_COHERE_MODEL", "embed-v4.0")
+MEM0_RERANK_COHERE_MODEL = os.getenv("MEM0_RERANK_COHERE_MODEL", "rerank-v4.0-fast")
+
+# Nvidia AI Endpoints Configuration
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1/"
+BROWSER_AGENT_NVIDIA_MODEL = os.getenv("BROWSER_AGENT_NVIDIA_MODEL", "qwen/qwen3.5-397b-a17b")
