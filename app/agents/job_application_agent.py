@@ -5,8 +5,7 @@ from browser_use.llm import ChatOpenAI
 from .knowledge_base_agent import KnowledgeBaseAgent
 from .resume_manager_agent import ResumeManagerAgent
 from ..logger_config import get_logger
-from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL, RESUMES_DIR
-from ..session_pool import SessionPool
+from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
 
 logger = get_logger(__name__)
 
