@@ -1,50 +1,41 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+SYNC IMPACT REPORT
+Version: 1.0.0 -> 1.1.0
+Modified Principles: Template defaults to Auto Job Application specific guidelines
+Added Sections: None
+Removed Sections: None
+Templates Requiring Updates: ✅ templates verified
+TODOs: None
+-->
+# Auto Job Application Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Agent Architecture First
+The project must rely on modular, single-responsibility agents utilizing the `browser-use` framework and LLM orchestrators (e.g., NVIDIA qwen, Groq) rather than low-level parsing libraries like Playwright or Selenium. Core agents include the Job Search, Job Application, Knowledge Base, and Resume Manager agents.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Memory & Context Integration
+The `mem0` framework with `Qdrant` vector store must handle applicant context. All file-based operations for knowledge constraints and resumes must be confined safely to the `user_data/knowledge_base/` and `user_data/resumes/` directories. 
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. System Configuration Consistency
+All environment configurations, external tool parameters, and provider credentials must be routed centrally through `app/config.py` utilizing `python-dotenv`. Explicit environmental fallbacks are mandatory.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Graceful Error Handling & Fallbacks
+Agent evaluations such as job fits, resume ranking, and knowledge base queries must implement try/except mechanisms resolving to default fallback behaviors (e.g., `is_fit=True`, returning "No knowledge base info" strings, fallback single-resume selection) to ensure uninterrupted multi-step agent processes.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Testing & Observability Rigor
+Comprehensive async test integration via `pytest` mimicking LLM behavior with mock objects is required. Custom multi-colored console logs using `app/logger_config.py` (`get_logger`) must be used at the module-level instead of bare prints to unify systemic observability.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Technologies & Stack
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- **Browser Automation**: `browser-use`
+- **Memory Framework**: `mem0ai` with `Qdrant`
+- **LLM APIs**: `langchain-cohere`, `ChatOpenAI` endpoints for NVIDIA, Groq
+- **Testing**: `pytest`, with `pytest-asyncio`
+- **Logging**: `colorlog`
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+All PRs/reviews must verify compliance with the Agent Architecture rules outlined in `AGENTS.md`. No new agents can be merged without corresponding test coverage and dependency additions integrated into `app/config.py` and `pyproject.toml`.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.1.0 | **Ratified**: 2026-04-20 | **Last Amended**: 2026-04-20

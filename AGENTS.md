@@ -1,6 +1,7 @@
 # AGENTS.md
 
-This file provides guidance to agents when working with code in this repository.
+This file provides guidance to agents when working with code in this repository. 
+It operates in strict alignment with the Auto Job Application Constitution v1.1.0 defined at `.specify/memory/constitution.md`. Please refer to the constitution for comprehensive governing principles.
 
 ## Build/Lint/Test Commands
 
