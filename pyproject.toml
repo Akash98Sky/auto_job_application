@@ -15,10 +15,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-    "taskipy>=1.2.1",
-]
+dev = ["pytest>=9.0.2", "taskipy>=1.2.1", "graphifyy>=0.4.23"]
 
 [tool.taskipy.tasks]
 test = "pytest"

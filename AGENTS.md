@@ -89,3 +89,8 @@ This file provides guidance to agents when working with code in this repository.
 - `pypdf>=6.6.0`: PDF text extraction
 - `colorlog>=6.10.1`: Colored logging
 - `pytest>=9.0.2`: Testing framework
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
