@@ -1,10 +1,4 @@
-# Python-generated files
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
 
 # Virtual environments
 .venv
@@ -19,7 +13,3 @@ profile/**
 user_data/knowledge_base/*.txt
 user_data/resumes/*.pdf
 memory_history.db
-
-# Graphify cache
-graphify-out/cache/
-user_data/graphs/obsidian/

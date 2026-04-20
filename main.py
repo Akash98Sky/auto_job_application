@@ -1,42 +1,44 @@
 import asyncio
-from browser_use import Browser
-from dotenv import load_dotenv
 
-from app.job_agent import JobApplicationAgent
+from app.agents import JobSearchAgent, JobApplicationAgent, KnowledgeBaseAgent, ResumeManagerAgent
 from app.logger_config import setup_logger
+from app.session_pool import SessionPool
 
 logger = setup_logger()
 
-load_dotenv()
 
 async def main():
-    browser = Browser(
-        executable_path='C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-        user_data_dir='./profile',
-        profile_directory='Default',
-        wait_between_actions=1000,
-        args=['--disable-extensions']
-    )
-
     try:
-        agent = JobApplicationAgent(
-            browser=browser,
-            model_name='meta-llama/llama-4-scout-17b-16e-instruct'  # Or use what was previously set for meta-llama
-        )
-        
-        job_url = "https://www.netskope.com/company/careers/open-positions?gh_jid=7601631&gh_src=my.greenhouse.search" # Provide target job URL
-        print(f"Starting job application on: {job_url}")
-        
-        await asyncio.sleep(5)  # Add a delay to allow browser initialization
-        history = await agent.apply_to_job(job_url)
+        session_pool = SessionPool()
+        browser = await session_pool.get_or_create("main")
+
+        knowledge_base = KnowledgeBaseAgent()
+        knowledge_base.load_from_directory()
+
+        resume_manager = ResumeManagerAgent()
+        resume_manager.load_resumes()
+
+        # Initialize both agents
+        search_agent = JobSearchAgent(browser=browser, knowledge_base=knowledge_base)
+        application_agent = JobApplicationAgent(browser=browser, knowledge_base=knowledge_base, resume_manager=resume_manager)
+
+        # Example 1: Search for jobs and get filtered results
+        # job_results = await search_agent.search_and_filter_jobs("Python Developer", limit=5)
+        # logger.info(f"Found {len(job_results)} fitting jobs:")
+        # for job in job_results:
+        #     logger.info(f"  - {job['url']}: {job['reasoning']}")
+
+        # Example 2: Apply to a specific job URL
+        job_url = "https://job-boards.greenhouse.io/bugcrowd/jobs/7507933?gh_jid=7507933&gh_src=my.greenhouse.search"  # Provide target job URL
+        logger.info(f"Starting job application on: {job_url}")
+
+        await asyncio.sleep(2)  # Add a delay to allow browser initialization
+        history = await application_agent.apply_to_job(job_url)
         return history
     except Exception as e:
-        print(f"Error occurred: {e}")
+        logger.error(f"Error occurred: {e}")
         raise e
-    finally:
-        if browser:
-            await browser.stop()
+
 
 if __name__ == "__main__":
     history = asyncio.run(main())
-
