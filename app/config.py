@@ -26,4 +26,4 @@ MEM0_RERANK_COHERE_MODEL = os.getenv("MEM0_RERANK_COHERE_MODEL", "rerank-v4.0-fa
 # Nvidia AI Endpoints Configuration
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1/"
-BROWSER_AGENT_NVIDIA_MODEL = os.getenv("BROWSER_AGENT_NVIDIA_MODEL", "qwen/qwen3.5-397b-a17b")
+BROWSER_AGENT_NVIDIA_MODEL = os.getenv("BROWSER_AGENT_NVIDIA_MODEL", "qwen/qwen3.5-122b-a10b")

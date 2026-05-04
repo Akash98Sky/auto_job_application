@@ -32,7 +32,7 @@ class KnowledgeBaseAgent:
                 config={
                     "model": CohereEmbeddings(
                         model=MEM0_EMBED_COHERE_MODEL
-                    ) # type: ignore
+                    )
                 }
             ),
             reranker=RerankerConfig(
