@@ -6,18 +6,18 @@
 ## 2. Agent Restructuring & API Documentation
 
 - [x] 2.1 Restructure `KnowledgeBaseAgent` to inherit from `BaseAgent`, implement isolated local Qdrant directory paths, add complete Google-style docstrings, and support lifecycle `close()`.
-- [ ] 2.2 Restructure `ResumeManagerAgent` to inherit from `BaseAgent` and add clean documentation and typings for all methods.
-- [ ] 2.3 Restructure `JobSearchAgent` to inherit from `BaseAgent` and fully document `search_and_filter_jobs`, `run_job_search`, and `analyze_job_fit`.
-- [ ] 2.4 Restructure `JobApplicationAgent` to inherit from `BaseAgent` and document the `apply_to_job` public method.
+- [x] 2.2 Restructure `ResumeManagerAgent` to inherit from `BaseAgent` and add clean documentation and typings for all methods.
+- [x] 2.3 Restructure `JobSearchAgent` to inherit from `BaseAgent` and fully document `search_and_filter_jobs`, `run_job_search`, and `analyze_job_fit`.
+- [x] 2.4 Restructure `JobApplicationAgent` to inherit from `BaseAgent` and document the `apply_to_job` public method.
 
 ## 3. Session Pool & Entry Point Cleanups
 
-- [ ] 3.1 Document `SessionPool` methods and ensure safe process termination on close.
-- [ ] 3.2 Add proper close/cleanup handling in `main.py` to release active databases and browser sessions gracefully.
+- [x] 3.1 Document `SessionPool` methods and ensure safe process termination on close.
+- [x] 3.2 Add proper close/cleanup handling in `main.py` to release active databases and browser sessions gracefully.
 
 ## 4. Test Infrastructure & Validation
 
-- [ ] 4.1 Fix `tests/test_resume_manager.py` by mocking `pathlib.Path.glob` instead of `os.listdir`.
-- [ ] 4.2 Fix `tests/test_knowledge_base.py` by using isolated temp directories for concurrent Qdrant test instances.
-- [ ] 4.3 Configure async tests support using `pytest-asyncio` settings in `pyproject.toml` or command line.
-- [ ] 4.4 Verify all unit tests pass without locking or async errors.
+- [x] 4.1 Fix `tests/test_resume_manager.py` by mocking `pathlib.Path.glob` instead of `os.listdir`.
+- [x] 4.2 Fix `tests/test_knowledge_base.py` by using isolated temp directories for concurrent Qdrant test instances.
+- [x] 4.3 Configure async tests support using `pytest-asyncio` settings in `pyproject.toml` or command line.
+- [x] 4.4 Verify all unit tests pass without locking or async errors.

@@ -1,6 +1,7 @@
 from browser_use import Agent, BrowserSession
 from browser_use.llm import ChatOpenAI, UserMessage
 
+from .base_agent import BaseAgent
 from .knowledge_base_agent import KnowledgeBaseAgent
 from ..models.llm_responses import JobFitAnalysis
 from ..logger_config import get_logger
@@ -8,15 +9,29 @@ from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
 
 logger = get_logger(__name__)
 
-
-class JobSearchAgent:
+class JobSearchAgent(BaseAgent):
     """
     Responsible for searching, analyzing, and filtering applicable job openings.
+    Uses browser-use to query job listings and NVIDIA LLM to perform fit analyses
+    based on the applicant's profile summary.
+
+    Inherits:
+        BaseAgent
     """
 
     def __init__(self, browser: BrowserSession, knowledge_base: KnowledgeBaseAgent):
-        # Setup LLM resources
+        """
+        Initializes the JobSearchAgent with a browser session and knowledge base.
+
+        Args:
+            browser (BrowserSession): Active browser-use session for page automation.
+            knowledge_base (KnowledgeBaseAgent): Initialized knowledge base agent.
+        """
         self.browser = browser
+        self.knowledge_base = knowledge_base
+        super().__init__()
+
+        # Setup LLM resources using NVIDIA API key and base URL
         self.llm = ChatOpenAI(
             model=BROWSER_AGENT_NVIDIA_MODEL,
             base_url=NVIDIA_BASE_URL,
@@ -24,15 +39,17 @@ class JobSearchAgent:
             reasoning_effort="low",
         )
 
-        # Initialize knowledge base for job fit analysis
-        self.knowledge_base = knowledge_base
-
     async def analyze_job_fit(self, job_description: str) -> JobFitAnalysis:
         """
-        Analyzes if the job is a good fit for the applicant based on their knowledge base.
-        Returns a JobFitAnalysis object with 'is_fit' (bool) and 'reasoning' (str).
+        Analyzes if a job description fits the applicant based on their knowledge base.
+
+        Args:
+            job_description (str): Full text or snippet of the target job description.
+
+        Returns:
+            JobFitAnalysis: Pydantic response model containing is_fit (bool) and reasoning (str).
         """
-        logger.info("Analyzing job fit...")
+        self.logger.info("Analyzing job fit against applicant profile summary...")
 
         # Get a summary of the applicant's profile from the knowledge base
         profile_summary = self.knowledge_base.query(
@@ -67,17 +84,25 @@ class JobSearchAgent:
             )
 
             result = response.completion
-            logger.info(f"Fit analysis result: {result.is_fit} - {result.reasoning}")
+            self.logger.info(f"Fit analysis result: {result.is_fit} - {result.reasoning}")
             return result
         except Exception as e:
-            logger.error(f"Error analyzing job fit: {e}")
+            self.logger.error(f"Error occurred during job fit analysis: {e}")
+            # Resilient default: return True to avoid blocking applications on LLM failures
             return JobFitAnalysis(is_fit=True, reasoning="Defaulting to True due to analysis error.")
 
     async def run_job_search(self, query: str, limit: int = 5) -> list[str]:
         """
-        Uses browser-use to search for jobs based on a query and returns a list of job URLs.
+        Runs browser automation to search Google/job boards for openings matching a query.
+
+        Args:
+            query (str): Job title or search query (e.g., 'Python Developer').
+            limit (int, optional): Max number of job URLs to return. Defaults to 5.
+
+        Returns:
+            list[str]: Extracted application or job description URLs.
         """
-        logger.info(f"Searching for jobs with query: {query}")
+        self.logger.info(f"Initiating browser job search for query: '{query}'")
 
         search_instructions = f"""
         1. Go to Google and search for "{query} jobs".
@@ -96,26 +121,33 @@ class JobSearchAgent:
         result = history.final_result() if history.is_successful() else ""
 
         if not result:
-            logger.warning("No job URLs found during search.")
+            self.logger.warning("No job URLs extracted during browser search.")
             return []
 
         urls = [url.strip() for url in result.split(",") if url.strip().startswith("http")]
-        logger.info(f"Found {len(urls)} job URLs.")
+        self.logger.info(f"Successfully discovered {len(urls)} job URLs.")
         return urls[:limit]
 
     async def search_and_filter_jobs(self, query: str, limit: int = 5) -> list[dict]:
         """
-        Searches for jobs and filters them based on job fit analysis.
-        Returns a list of dictionaries containing job URLs and fit analysis.
-        """
-        logger.info(f"Searching and filtering jobs for query: {query}")
+        Searches for jobs and filters them based on a personalized fit analysis.
 
-        job_urls = await self.run_job_search(query, limit=limit * 2)  # Get more to filter
+        Args:
+            query (str): Job search query (e.g., 'Python Developer').
+            limit (int, optional): Maximum number of fitting jobs to return. Defaults to 5.
+
+        Returns:
+            list[dict]: List of dictionaries with keys: 'url', 'is_fit', 'reasoning'.
+        """
+        self.logger.info(f"Searching and filtering jobs for query: '{query}'")
+
+        # Fetch more to allow for filtering
+        job_urls = await self.run_job_search(query, limit=limit * 2)
 
         filtered_jobs = []
         for url in job_urls:
-            # Extract job description from URL (simplified - in practice, you'd scrape the page)
-            job_description = f"Job at {url}"  # Placeholder - actual extraction would require browser agent
+            # Extract job description (actual extraction would scrape; using placeholder)
+            job_description = f"Job at {url}"
 
             fit_analysis = await self.analyze_job_fit(job_description)
 
@@ -126,5 +158,5 @@ class JobSearchAgent:
                     "reasoning": fit_analysis.reasoning
                 })
 
-        logger.info(f"Found {len(filtered_jobs)} fitting jobs out of {len(job_urls)} searched.")
-        return filtered_jobs
+        self.logger.info(f"Retained {len(filtered_jobs)} fitting jobs out of {len(job_urls)} searched.")
+        return filtered_jobs[:limit]

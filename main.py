@@ -8,6 +8,11 @@ logger = setup_logger()
 
 
 async def main():
+    session_pool = None
+    knowledge_base = None
+    resume_manager = None
+    search_agent = None
+    application_agent = None
     try:
         session_pool = SessionPool()
         browser = await session_pool.get_or_create("main")
@@ -38,6 +43,20 @@ async def main():
     except Exception as e:
         logger.error(f"Error occurred: {e}")
         raise e
+    finally:
+        logger.info("Initiating application cleanup and releasing active resources...")
+        # Asynchronously close and clean up all agent resources
+        if search_agent:
+            await search_agent.close()
+        if application_agent:
+            await application_agent.close()
+        if knowledge_base:
+            await knowledge_base.close()
+        if resume_manager:
+            await resume_manager.close()
+        if session_pool:
+            await session_pool.close_all()
+        logger.info("Cleanup completed successfully.")
 
 
 if __name__ == "__main__":

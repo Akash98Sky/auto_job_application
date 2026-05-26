@@ -1,7 +1,8 @@
 import asyncio
-from browser_use import Agent, BrowserSession, Controller, Tools
+from browser_use import Agent, BrowserSession, Tools
 from browser_use.llm import ChatOpenAI
 
+from .base_agent import BaseAgent
 from .knowledge_base_agent import KnowledgeBaseAgent
 from .resume_manager_agent import ResumeManagerAgent
 from ..logger_config import get_logger
@@ -9,16 +10,31 @@ from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
 
 logger = get_logger(__name__)
 
-
-class JobApplicationAgent:
+class JobApplicationAgent(BaseAgent):
     """
-    Responsible for applying to jobs. Handles job description extraction,
-    resume selection, and form filling using the knowledge base.
+    Responsible for applying to jobs automatically.
+    Handles job description extraction, resume selection via ResumeManager,
+    and automatic form filling by querying applicant memory via a registered custom tool.
+
+    Inherits:
+        BaseAgent
     """
 
     def __init__(self, browser: BrowserSession, knowledge_base: KnowledgeBaseAgent, resume_manager: ResumeManagerAgent):
-        # Setup LLM resources
+        """
+        Initializes the JobApplicationAgent with browser session and sub-agents.
+
+        Args:
+            browser (BrowserSession): Active browser-use session for page automation.
+            knowledge_base (KnowledgeBaseAgent): Initialized knowledge base agent.
+            resume_manager (ResumeManagerAgent): Initialized resume manager agent.
+        """
         self.browser = browser
+        self.knowledge_base = knowledge_base
+        self.resume_manager = resume_manager
+        super().__init__()
+
+        # Setup LLM resources using NVIDIA API key and base URL
         self.llm = ChatOpenAI(
             model=BROWSER_AGENT_NVIDIA_MODEL,
             base_url=NVIDIA_BASE_URL,
@@ -26,17 +42,16 @@ class JobApplicationAgent:
             reasoning_effort="low",
         )
 
-        # Initialize sub-agents for knowledge base and resume management
-        self.knowledge_base = knowledge_base
-        self.resume_manager = resume_manager
-
     def _build_tools(self) -> Tools:
         """
-        Creates a browser-use Tools and registers the knowledge base
-        as a callable tool so the agent can query it on demand.
+        Creates a browser-use Tools configuration and registers the knowledge base
+        as a callable tool so that the browser agent can query it on demand.
+
+        Returns:
+            Tools: Browser-use Tools object with query_knowledge_base registered.
         """
         tools = Tools()
-        kb = self.knowledge_base  # local ref for the closure
+        kb = self.knowledge_base  # local reference for the closure
 
         @tools.action(
             "Query the applicant's knowledge base to retrieve facts about their "
@@ -45,22 +60,31 @@ class JobApplicationAgent:
         )
         def query_knowledge_base(question: str) -> str:
             """
+            Queries the knowledge base for specific information.
+
             Args:
-                question: A natural-language question about the applicant,
+                question (str): A natural-language question about the applicant,
                     e.g. 'What is the applicant's phone number?'
+
             Returns:
-                Relevant facts retrieved from the knowledge base.
+                str: Relevant facts retrieved from the knowledge base.
             """
             return kb.query(question)
 
         return tools
 
-    async def apply_to_job(self, job_url: str):
+    async def apply_to_job(self, job_url: str) -> Agent | None:
         """
-        Navigates to the job URL, uses the ResumeManager to select the best resume,
-        and lets the agent query the KnowledgeBase via a tool call when it needs facts.
+        Navigates to the job URL, extracts the description, uses the ResumeManager to select
+        the best-matching resume, and runs browser-use Agent to complete the application.
+
+        Args:
+            job_url (str): Absolute URL of the target job application form.
+
+        Returns:
+            Agent history or completion logs, or None if no resume is found.
         """
-        logger.info(f"Applying to job at {job_url}")
+        self.logger.info(f"Initiating job application at URL: {job_url}")
 
         # Create an initial agent just to extract the job description
         extract_instructions = (
@@ -68,35 +92,37 @@ class JobApplicationAgent:
             "requirements, and responsibilities. Return ONLY this extracted text."
         )
 
-        logger.info("Extracting job description from the page...")
+        self.logger.info("Extracting job description from page...")
 
         extractor_agent = Agent(
             task=extract_instructions,
             llm=self.llm,
             browser=self.browser
         )
-        extract_history = await extractor_agent.run(max_steps=5)
-
-        # Get the final result from the history
-        job_description = extract_history.final_result() if extract_history.is_successful() else "General Job Description"
+        
+        try:
+            extract_history = await extractor_agent.run(max_steps=5)
+            job_description = extract_history.final_result() if extract_history.is_successful() else "General Job Description"
+        except Exception as e:
+            self.logger.error(f"Failed to extract job description: {e}")
+            job_description = "General Job Description"
+        finally:
+            await extractor_agent.close()
 
         if not job_description:
             job_description = "General Job Description"
 
-        logger.info(f"Extracted job description length: {len(job_description)} characters")
+        self.logger.info(f"Extracted job description length: {len(job_description)} characters")
 
         # Select the most relevant resume based on extracted description
         best_resume_path = await self.resume_manager.get_best_resume(job_description)
 
         if not best_resume_path:
-            logger.error("No suitable resume found.")
-            await extractor_agent.close()
+            self.logger.error("No suitable resume found; aborting application process.")
             return None
 
-        logger.info(f"Using resume: {best_resume_path}")
-
-        await extractor_agent.close()  # Close the extractor agent before starting the application agent
-        await asyncio.sleep(2)  # Add a delay to allow browser reset
+        self.logger.info(f"Using matched resume PDF path: {best_resume_path}")
+        await asyncio.sleep(2)  # Allow browser session to reset
 
         base_instructions = f"""
         You are an autonomous AI applying for jobs.
@@ -125,7 +151,8 @@ class JobApplicationAgent:
             directly_open_url=False
         )
 
-        history = await application_agent.run(max_steps=20)
-        await application_agent.close()
-
-        return history
+        try:
+            history = await application_agent.run(max_steps=20)
+            return history
+        finally:
+            await application_agent.close()
