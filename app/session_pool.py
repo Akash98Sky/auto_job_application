@@ -1,3 +1,4 @@
+import atexit
 from browser_use import Browser
 from .config import BROWSER_EXECUTABLE_PATH, BROWSER_PROFILE_DIR, BROWSER_USER_DATA_DIR
 from .logger_config import get_logger
@@ -16,6 +17,37 @@ class SessionPool:
         """
         self._by_tenant: dict[str, Browser] = {}
         logger.info("SessionPool initialized successfully.")
+        # Register atexit process termination to prevent background browser orphans
+        atexit.register(self.close_all_sync)
+
+    def close_all_sync(self) -> None:
+        """
+        Synchronously closes all active browser sessions in the pool.
+        This is designed to be registered as an atexit handler to prevent
+        orphaned Chromium/Edge processes when the interpreter exits.
+        """
+        if not self._by_tenant:
+            return
+            
+        logger.info("SessionPool registering global shutdown; killing active browser processes...")
+        import asyncio
+        
+        for tenant_id in list(self._by_tenant.keys()):
+            b = self._by_tenant.pop(tenant_id, None)
+            if b:
+                try:
+                    logger.info(f"Sync-killing browser session for tenant: '{tenant_id}'...")
+                    try:
+                        loop = asyncio.get_running_loop()
+                        if loop.is_running():
+                            loop.create_task(b.kill())
+                        else:
+                            asyncio.run(b.kill())
+                    except RuntimeError:
+                        asyncio.run(b.kill())
+                except Exception as e:
+                    logger.debug(f"Sync-killing failed for tenant '{tenant_id}': {e}")
+        self._by_tenant.clear()
 
     async def get_or_create(self, tenant_id: str = "default") -> Browser:
         """

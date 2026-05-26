@@ -27,49 +27,54 @@ class TestJobSearchAgent:
         return kb
 
     @pytest.fixture
-    def job_search_agent(self, mock_browser_session, mock_knowledge_base):
-        """Create a JobSearchAgent instance with mocked dependencies."""
-        return JobSearchAgent(browser=mock_browser_session, knowledge_base=mock_knowledge_base)
+    def mock_llm(self):
+        """Create a mock LLM."""
+        return MagicMock()
 
-    def test_job_search_agent_initialization(self, mock_browser_session, mock_knowledge_base):
+    @pytest.fixture
+    def job_search_agent(self, mock_browser_session, mock_knowledge_base, mock_llm):
+        """Create a JobSearchAgent instance with mocked dependencies."""
+        return JobSearchAgent(browser=mock_browser_session, knowledge_base=mock_knowledge_base, llm=mock_llm)
+
+    def test_job_search_agent_initialization(self, mock_browser_session, mock_knowledge_base, mock_llm):
         """Test that JobSearchAgent initializes properly."""
-        agent = JobSearchAgent(browser=mock_browser_session, knowledge_base=mock_knowledge_base)
+        agent = JobSearchAgent(browser=mock_browser_session, knowledge_base=mock_knowledge_base, llm=mock_llm)
         assert agent is not None
         assert agent.browser == mock_browser_session
         assert agent.knowledge_base == mock_knowledge_base
-        assert agent.llm is not None
+        assert agent.llm == mock_llm
 
     @pytest.mark.asyncio
-    async def test_analyze_job_fit_good_fit(self, job_search_agent):
+    async def test_analyze_job_fit_good_fit(self, job_search_agent, mock_llm):
         """Test job fit analysis when the job is a good fit."""
         # Mock the LLM response
         mock_response = MagicMock()
         mock_response.completion = JobFitAnalysis(is_fit=True, reasoning="Skills match well.")
 
-        with patch.object(job_search_agent.llm, 'ainvoke', AsyncMock(return_value=mock_response)):
-            result = await job_search_agent.analyze_job_fit("Looking for Python developer with Django experience.")
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        result = await job_search_agent.analyze_job_fit("Looking for Python developer with Django experience.")
 
         assert result.is_fit is True
         assert "Skills match" in result.reasoning
 
     @pytest.mark.asyncio
-    async def test_analyze_job_fit_bad_fit(self, job_search_agent):
+    async def test_analyze_job_fit_bad_fit(self, job_search_agent, mock_llm):
         """Test job fit analysis when the job is not a good fit."""
         # Mock the LLM response
         mock_response = MagicMock()
         mock_response.completion = JobFitAnalysis(is_fit=False, reasoning="Required skills do not match.")
 
-        with patch.object(job_search_agent.llm, 'ainvoke', AsyncMock(return_value=mock_response)):
-            result = await job_search_agent.analyze_job_fit("Looking for senior Java architect with 10 years experience.")
+        mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+        result = await job_search_agent.analyze_job_fit("Looking for senior Java architect with 10 years experience.")
 
         assert result.is_fit is False
         assert "do not match" in result.reasoning
 
     @pytest.mark.asyncio
-    async def test_analyze_job_fit_error_handling(self, job_search_agent):
+    async def test_analyze_job_fit_error_handling(self, job_search_agent, mock_llm):
         """Test that job fit analysis handles errors gracefully."""
-        with patch.object(job_search_agent.llm, 'ainvoke', AsyncMock(side_effect=Exception("LLM error"))):
-            result = await job_search_agent.analyze_job_fit("Some job description.")
+        mock_llm.ainvoke = AsyncMock(side_effect=Exception("LLM error"))
+        result = await job_search_agent.analyze_job_fit("Some job description.")
 
         # Should default to is_fit=True on error
         assert result.is_fit is True

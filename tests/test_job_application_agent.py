@@ -35,26 +35,33 @@ class TestJobApplicationAgent:
         return rm
 
     @pytest.fixture
-    def job_application_agent(self, mock_browser_session, mock_knowledge_base, mock_resume_manager):
+    def mock_llm(self):
+        """Create a mock LLM."""
+        return MagicMock()
+
+    @pytest.fixture
+    def job_application_agent(self, mock_browser_session, mock_knowledge_base, mock_resume_manager, mock_llm):
         """Create a JobApplicationAgent instance with mocked dependencies."""
         return JobApplicationAgent(
             browser=mock_browser_session,
             knowledge_base=mock_knowledge_base,
-            resume_manager=mock_resume_manager
+            resume_manager=mock_resume_manager,
+            llm=mock_llm
         )
 
-    def test_job_application_agent_initialization(self, mock_browser_session, mock_knowledge_base, mock_resume_manager):
+    def test_job_application_agent_initialization(self, mock_browser_session, mock_knowledge_base, mock_resume_manager, mock_llm):
         """Test that JobApplicationAgent initializes properly."""
         agent = JobApplicationAgent(
             browser=mock_browser_session,
             knowledge_base=mock_knowledge_base,
-            resume_manager=mock_resume_manager
+            resume_manager=mock_resume_manager,
+            llm=mock_llm
         )
         assert agent is not None
         assert agent.browser == mock_browser_session
         assert agent.knowledge_base == mock_knowledge_base
         assert agent.resume_manager == mock_resume_manager
-        assert agent.llm is not None
+        assert agent.llm == mock_llm
 
     def test_build_tools(self, job_application_agent):
         """Test that _build_tools creates tools with knowledge base action."""

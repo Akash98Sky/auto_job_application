@@ -1,6 +1,7 @@
 import asyncio
 
 from app.agents import JobSearchAgent, JobApplicationAgent, KnowledgeBaseAgent, ResumeManagerAgent
+from app.config import validate_config
 from app.logger_config import setup_logger
 from app.session_pool import SessionPool
 
@@ -8,6 +9,10 @@ logger = setup_logger()
 
 
 async def main():
+    logger.info("Verifying configuration...")
+    validate_config(raise_on_error=True)
+    logger.info("Configuration is valid.")
+
     session_pool = None
     knowledge_base = None
     resume_manager = None

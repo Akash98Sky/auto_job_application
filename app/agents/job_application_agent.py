@@ -20,7 +20,7 @@ class JobApplicationAgent(BaseAgent):
         BaseAgent
     """
 
-    def __init__(self, browser: BrowserSession, knowledge_base: KnowledgeBaseAgent, resume_manager: ResumeManagerAgent):
+    def __init__(self, browser: BrowserSession, knowledge_base: KnowledgeBaseAgent, resume_manager: ResumeManagerAgent, llm: ChatOpenAI | None = None):
         """
         Initializes the JobApplicationAgent with browser session and sub-agents.
 
@@ -28,14 +28,15 @@ class JobApplicationAgent(BaseAgent):
             browser (BrowserSession): Active browser-use session for page automation.
             knowledge_base (KnowledgeBaseAgent): Initialized knowledge base agent.
             resume_manager (ResumeManagerAgent): Initialized resume manager agent.
+            llm (ChatOpenAI, optional): Pre-initialized model instance.
         """
         self.browser = browser
         self.knowledge_base = knowledge_base
         self.resume_manager = resume_manager
         super().__init__()
 
-        # Setup LLM resources using NVIDIA API key and base URL
-        self.llm = ChatOpenAI(
+        # Setup LLM resources using injected model or fallback
+        self.llm = llm or ChatOpenAI(
             model=BROWSER_AGENT_NVIDIA_MODEL,
             base_url=NVIDIA_BASE_URL,
             api_key=NVIDIA_API_KEY,

@@ -27,3 +27,36 @@ MEM0_RERANK_COHERE_MODEL = os.getenv("MEM0_RERANK_COHERE_MODEL", "rerank-v4.0-fa
 NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1/"
 BROWSER_AGENT_NVIDIA_MODEL = os.getenv("BROWSER_AGENT_NVIDIA_MODEL", "qwen/qwen3.5-122b-a10b")
+
+def validate_config(raise_on_error: bool = True) -> bool:
+    """
+    Validates that all essential API keys are present and non-empty.
+
+    Args:
+        raise_on_error (bool): If True, raises a ValueError on validation failure.
+                              If False, logs critical warnings instead.
+
+    Returns:
+        bool: True if configuration is valid, False otherwise.
+
+    Raises:
+        ValueError: If a required API key is missing and raise_on_error is True.
+    """
+    missing_keys = []
+    if not NVIDIA_API_KEY:
+        missing_keys.append("NVIDIA_API_KEY")
+    if not GROQ_API_KEY:
+        missing_keys.append("GROQ_API_KEY")
+    if not COHERE_API_KEY:
+        missing_keys.append("COHERE_API_KEY")
+
+    if missing_keys:
+        msg = (
+            f"Configuration validation failed! The following required environment variables "
+            f"are missing or empty: {', '.join(missing_keys)}. "
+            f"Please configure them in your .env file or environment."
+        )
+        if raise_on_error:
+            raise ValueError(msg)
+        return False
+    return True
