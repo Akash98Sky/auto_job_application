@@ -1,6 +1,11 @@
 import asyncio
 
-from app.agents import JobSearchAgent, JobApplicationAgent, KnowledgeBaseAgent, ResumeManagerAgent
+from app.agents import (
+    JobApplicationAgent,
+    JobSearchAgent,
+    KnowledgeBaseAgent,
+    ResumeManagerAgent,
+)
 from app.config import validate_config
 from app.logger_config import setup_logger
 from app.session_pool import SessionPool
@@ -30,7 +35,11 @@ async def main():
 
         # Initialize both agents
         search_agent = JobSearchAgent(browser=browser, knowledge_base=knowledge_base)
-        application_agent = JobApplicationAgent(browser=browser, knowledge_base=knowledge_base, resume_manager=resume_manager)
+        application_agent = JobApplicationAgent(
+            browser=browser,
+            knowledge_base=knowledge_base,
+            resume_manager=resume_manager,
+        )
 
         # Example 1: Search for jobs and get filtered results
         # job_results = await search_agent.search_and_filter_jobs("Python Developer", limit=5)
@@ -39,7 +48,7 @@ async def main():
         #     logger.info(f"  - {job['url']}: {job['reasoning']}")
 
         # Example 2: Apply to a specific job URL
-        job_url = "https://job-boards.greenhouse.io/bugcrowd/jobs/7507933?gh_jid=7507933&gh_src=my.greenhouse.search"  # Provide target job URL
+        job_url = "https://www.digicert.com/careers?gh_jid=8505580002&gh_src=my.greenhouse.search"  # Provide target job URL
         logger.info(f"Starting job application on: {job_url}")
 
         await asyncio.sleep(2)  # Add a delay to allow browser initialization

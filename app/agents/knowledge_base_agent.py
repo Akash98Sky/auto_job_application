@@ -1,13 +1,26 @@
-from langchain_cohere import CohereEmbeddings
-from mem0 import Memory
-from mem0.configs.base import MemoryConfig, LlmConfig, EmbedderConfig, RerankerConfig, VectorStoreConfig
 from pathlib import Path
 
-from .base_agent import BaseAgent
+from langchain_cohere import ChatCohere, CohereEmbeddings
+from mem0 import Memory
+from mem0.configs.base import (
+    EmbedderConfig,
+    LlmConfig,
+    MemoryConfig,
+    RerankerConfig,
+    VectorStoreConfig,
+)
+
+from ..config import (
+    KNOWLEDGE_BASE_DIR,
+    MEM0_EMBED_COHERE_MODEL,
+    MEM0_LLM_COHERE_MODEL,
+    MEM0_RERANK_COHERE_MODEL,
+)
 from ..logger_config import get_logger
-from ..config import KNOWLEDGE_BASE_DIR, MEM0_LLM_GROQ_MODEL, MEM0_EMBED_COHERE_MODEL, MEM0_RERANK_COHERE_MODEL
+from .base_agent import BaseAgent
 
 logger = get_logger(__name__)
+
 
 class KnowledgeBaseAgent(BaseAgent):
     """
@@ -40,28 +53,19 @@ class KnowledgeBaseAgent(BaseAgent):
                 config={
                     "embedding_model_dims": 1536,
                     "path": qdrant_path,
-                }
+                },
             ),
             llm=LlmConfig(
-                provider="groq",
-                config={
-                    "model": MEM0_LLM_GROQ_MODEL
-                }
+                provider="langchain",
+                config={"model": ChatCohere(model=MEM0_LLM_COHERE_MODEL)},
             ),
             embedder=EmbedderConfig(
                 provider="langchain",
-                config={
-                    "model": CohereEmbeddings(
-                        model=MEM0_EMBED_COHERE_MODEL
-                    )
-                }
+                config={"model": CohereEmbeddings(model=MEM0_EMBED_COHERE_MODEL)},  # pyright: ignore[reportCallIssue]
             ),
             reranker=RerankerConfig(
-                provider="cohere",
-                config={
-                    "model": MEM0_RERANK_COHERE_MODEL
-                }
-            )
+                provider="cohere", config={"model": MEM0_RERANK_COHERE_MODEL}
+            ),
         )
         self.memory = Memory(config=config)
 
@@ -80,7 +84,11 @@ class KnowledgeBaseAgent(BaseAgent):
                     with open(file_path, "r", encoding="utf-8") as f:
                         content = f.read()
                         # Add document content to memory associated with the application context
-                        self.memory.add(content, user_id="applicant", metadata={"source": file_path.name})
+                        self.memory.add(
+                            content,
+                            user_id="applicant",
+                            metadata={"source": file_path.name},
+                        )
                         self.logger.info(f"Successfully loaded: {file_path.name}")
                 except Exception as e:
                     self.logger.error(f"Failed to load {file_path.name}: {e}")
@@ -99,10 +107,10 @@ class KnowledgeBaseAgent(BaseAgent):
         self.logger.info(f"Querying knowledge base: '{question}'")
         try:
             results = self.memory.search(question, user_id="applicant", limit=5)
-            
+
             if not results:
                 return "No relevant information found in the knowledge base."
-            
+
             # Format the retrieved facts into a cohesive answer
             facts = "\n".join([f"- {res}" for res in results])
             return facts
@@ -123,28 +131,37 @@ class KnowledgeBaseAgent(BaseAgent):
                     client = vs.client
                     if hasattr(client, "_client") and client._client is not None:
                         local_client = client._client
-                        if hasattr(local_client, "_flock_file") and local_client._flock_file is not None:
+                        if (
+                            hasattr(local_client, "_flock_file")
+                            and local_client._flock_file is not None
+                        ):
                             try:
                                 import portalocker
+
                                 portalocker.unlock(local_client._flock_file)
                             except Exception:
                                 pass
                             local_client._flock_file.close()
                             local_client._flock_file = None
-                            self.logger.debug("Released local Qdrant flock file lock successfully.")
+                            self.logger.debug(
+                                "Released local Qdrant flock file lock successfully."
+                            )
                     if hasattr(client, "close"):
                         client.close()
         except Exception as e:
             self.logger.warning(f"Error while releasing Qdrant connection: {e}")
         await super().close()
 
+
 if __name__ == "__main__":
     # Standard entry test
     import asyncio
+
     async def run_test():
         kb = KnowledgeBaseAgent()
         kb.load_from_directory()
         logger.info("Test Query: What are the applicant's main skills?")
         logger.info(kb.query("What are the applicant's main skills?"))
         await kb.close()
+
     asyncio.run(run_test())

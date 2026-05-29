@@ -1,14 +1,16 @@
 import asyncio
-from browser_use import Agent, BrowserSession, Tools
+
+from browser_use import Agent, AgentHistoryList, BrowserSession, Tools
 from browser_use.llm import ChatOpenAI
 
+from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
+from ..logger_config import get_logger
 from .base_agent import BaseAgent
 from .knowledge_base_agent import KnowledgeBaseAgent
 from .resume_manager_agent import ResumeManagerAgent
-from ..logger_config import get_logger
-from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
 
 logger = get_logger(__name__)
+
 
 class JobApplicationAgent(BaseAgent):
     """
@@ -20,7 +22,13 @@ class JobApplicationAgent(BaseAgent):
         BaseAgent
     """
 
-    def __init__(self, browser: BrowserSession, knowledge_base: KnowledgeBaseAgent, resume_manager: ResumeManagerAgent, llm: ChatOpenAI | None = None):
+    def __init__(
+        self,
+        browser: BrowserSession,
+        knowledge_base: KnowledgeBaseAgent,
+        resume_manager: ResumeManagerAgent,
+        llm: ChatOpenAI | None = None,
+    ):
         """
         Initializes the JobApplicationAgent with browser session and sub-agents.
 
@@ -74,7 +82,7 @@ class JobApplicationAgent(BaseAgent):
 
         return tools
 
-    async def apply_to_job(self, job_url: str) -> Agent | None:
+    async def apply_to_job(self, job_url: str) -> AgentHistoryList | None:
         """
         Navigates to the job URL, extracts the description, uses the ResumeManager to select
         the best-matching resume, and runs browser-use Agent to complete the application.
@@ -96,14 +104,16 @@ class JobApplicationAgent(BaseAgent):
         self.logger.info("Extracting job description from page...")
 
         extractor_agent = Agent(
-            task=extract_instructions,
-            llm=self.llm,
-            browser=self.browser
+            task=extract_instructions, llm=self.llm, browser=self.browser
         )
-        
+
         try:
             extract_history = await extractor_agent.run(max_steps=5)
-            job_description = extract_history.final_result() if extract_history.is_successful() else "General Job Description"
+            job_description = (
+                extract_history.final_result()
+                if extract_history.is_successful()
+                else "General Job Description"
+            )
         except Exception as e:
             self.logger.error(f"Failed to extract job description: {e}")
             job_description = "General Job Description"
@@ -113,7 +123,9 @@ class JobApplicationAgent(BaseAgent):
         if not job_description:
             job_description = "General Job Description"
 
-        self.logger.info(f"Extracted job description length: {len(job_description)} characters")
+        self.logger.info(
+            f"Extracted job description length: {len(job_description)} characters"
+        )
 
         # Select the most relevant resume based on extracted description
         best_resume_path = await self.resume_manager.get_best_resume(job_description)
@@ -149,7 +161,7 @@ class JobApplicationAgent(BaseAgent):
             available_file_paths=[best_resume_path],
             browser=self.browser,
             use_vision=True,
-            directly_open_url=False
+            directly_open_url=False,
         )
 
         try:
