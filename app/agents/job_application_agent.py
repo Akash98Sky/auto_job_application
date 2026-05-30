@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 from browser_use import Agent, AgentHistoryList, BrowserSession, Tools
 from browser_use.llm import ChatOpenAI
@@ -50,6 +51,47 @@ class JobApplicationAgent(BaseAgent):
             api_key=NVIDIA_API_KEY,
             reasoning_effort="low",
         )
+
+        # Collect available resume file paths
+        self.available_file_paths = self._collect_available_resumes()
+
+    def _collect_available_resumes(self) -> list[str]:
+        """
+        Discovers all PDF resume files in the user_data/resumes/ directory
+        and returns their absolute paths as strings.
+
+        Returns:
+            list[str]: List of absolute paths to resume PDF files.
+                      Returns empty list if directory doesn't exist or no PDFs found.
+        """
+        resumes_dir = Path("user_data/resumes")
+
+        # Handle case where resumes directory doesn't exist
+        if not resumes_dir.exists():
+            self.logger.warning(
+                f"Resumes directory not found at {resumes_dir.resolve()}. "
+                "Job applications may fail if resume upload is required."
+            )
+            return []
+
+        # Collect all PDF files in the directory
+        pdf_files = list(resumes_dir.glob("*.pdf"))
+
+        # Handle case where resumes directory exists but is empty
+        if not pdf_files:
+            self.logger.warning(
+                f"No PDF files found in {resumes_dir.resolve()}. "
+                "Job applications may fail if resume upload is required."
+            )
+            return []
+
+        # Convert to absolute path strings
+        available_paths = [str(pdf_file.resolve()) for pdf_file in pdf_files]
+        self.logger.info(
+            f"Collected {len(available_paths)} resume file(s): {available_paths}"
+        )
+
+        return available_paths
 
     def _build_tools(self) -> Tools:
         """
@@ -104,7 +146,10 @@ class JobApplicationAgent(BaseAgent):
         self.logger.info("Extracting job description from page...")
 
         extractor_agent = Agent(
-            task=extract_instructions, llm=self.llm, browser=self.browser
+            task=extract_instructions,
+            llm=self.llm,
+            browser=self.browser,
+            available_file_paths=self.available_file_paths,
         )
 
         try:
@@ -158,7 +203,7 @@ class JobApplicationAgent(BaseAgent):
             task=base_instructions,
             llm=self.llm,
             tools=self._build_tools(),
-            available_file_paths=[best_resume_path],
+            available_file_paths=self.available_file_paths,
             browser=self.browser,
             use_vision=True,
             directly_open_url=False,
