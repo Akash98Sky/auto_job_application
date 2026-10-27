@@ -1,9 +1,12 @@
 import atexit
+
 from browser_use import Browser
+
 from .config import BROWSER_EXECUTABLE_PATH, BROWSER_PROFILE_DIR, BROWSER_USER_DATA_DIR
 from .logger_config import get_logger
 
 logger = get_logger(__name__)
+
 
 class SessionPool:
     """
@@ -28,10 +31,10 @@ class SessionPool:
         """
         if not self._by_tenant:
             return
-            
+
         logger.info("SessionPool registering global shutdown; killing active browser processes...")
         import asyncio
-        
+
         for tenant_id in list(self._by_tenant.keys()):
             b = self._by_tenant.pop(tenant_id, None)
             if b:
@@ -40,7 +43,7 @@ class SessionPool:
                     try:
                         loop = asyncio.get_running_loop()
                         if loop.is_running():
-                            loop.create_task(b.kill())
+                            loop.create_task(b.kill()).result()
                         else:
                             asyncio.run(b.kill())
                     except RuntimeError:
@@ -66,8 +69,8 @@ class SessionPool:
                     executable_path=BROWSER_EXECUTABLE_PATH,
                     user_data_dir=BROWSER_USER_DATA_DIR,
                     profile_directory=BROWSER_PROFILE_DIR,
-                    args=['--disable-extensions'],
-                    keep_alive=True
+                    args=["--disable-extensions"],
+                    keep_alive=True,
                 )
                 await b.start()
                 self._by_tenant[tenant_id] = b

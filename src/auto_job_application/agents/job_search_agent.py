@@ -1,11 +1,11 @@
 from browser_use import Agent, BrowserSession
 from browser_use.llm import ChatOpenAI, UserMessage
 
+from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
+from ..logger_config import get_logger
+from ..models.llm_responses import JobFitAnalysis
 from .base_agent import BaseAgent
 from .knowledge_base_agent import KnowledgeBaseAgent
-from ..models.llm_responses import JobFitAnalysis
-from ..logger_config import get_logger
-from ..config import BROWSER_AGENT_NVIDIA_MODEL, NVIDIA_API_KEY, NVIDIA_BASE_URL
 
 logger = get_logger(__name__)
 

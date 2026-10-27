@@ -81,7 +81,7 @@ class KnowledgeBaseAgent(BaseAgent):
         for file_path in self.data_dir.glob("*.*"):
             if file_path.suffix in [".txt", ".md"]:
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
+                    with open(file_path, encoding="utf-8") as f:
                         content = f.read()
                         # Add document content to memory associated with the application context
                         self.memory.add(

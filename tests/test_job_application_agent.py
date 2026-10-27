@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from auto_job_application.agents.job_application_agent import JobApplicationAgent
 from auto_job_application.agents.knowledge_base_agent import KnowledgeBaseAgent
@@ -19,14 +20,18 @@ class TestJobApplicationAgent:
     def mock_knowledge_base(self):
         """Create a mock knowledge base agent."""
         kb = MagicMock(spec=KnowledgeBaseAgent)
-        kb.query.return_value = "Applicant has 5 years of Python experience, skilled in Django and AWS."
+        kb.query.return_value = (
+            "Applicant has 5 years of Python experience, skilled in Django and AWS."
+        )
         return kb
 
     @pytest.fixture
     def mock_resume_manager(self):
         """Create a mock resume manager agent."""
         rm = MagicMock(spec=ResumeManagerAgent)
-        rm.get_best_resume = AsyncMock(return_value=str(Path("user_data/resumes/test_resume.pdf").absolute()))
+        rm.get_best_resume = AsyncMock(
+            return_value=str(Path("user_data/resumes/test_resume.pdf").absolute())
+        )
         return rm
 
     @pytest.fixture
@@ -35,22 +40,26 @@ class TestJobApplicationAgent:
         return MagicMock()
 
     @pytest.fixture
-    def job_application_agent(self, mock_browser_session, mock_knowledge_base, mock_resume_manager, mock_llm):
+    def job_application_agent(
+        self, mock_browser_session, mock_knowledge_base, mock_resume_manager, mock_llm
+    ):
         """Create a JobApplicationAgent instance with mocked dependencies."""
         return JobApplicationAgent(
             browser=mock_browser_session,
             knowledge_base=mock_knowledge_base,
             resume_manager=mock_resume_manager,
-            llm=mock_llm
+            llm=mock_llm,
         )
 
-    def test_job_application_agent_initialization(self, mock_browser_session, mock_knowledge_base, mock_resume_manager, mock_llm):
+    def test_job_application_agent_initialization(
+        self, mock_browser_session, mock_knowledge_base, mock_resume_manager, mock_llm
+    ):
         """Test that JobApplicationAgent initializes properly."""
         agent = JobApplicationAgent(
             browser=mock_browser_session,
             knowledge_base=mock_knowledge_base,
             resume_manager=mock_resume_manager,
-            llm=mock_llm
+            llm=mock_llm,
         )
         assert agent is not None
         assert agent.browser == mock_browser_session
@@ -65,7 +74,7 @@ class TestJobApplicationAgent:
 
     def test_query_knowledge_base_tool(self, job_application_agent, mock_knowledge_base):
         """Test that the query_knowledge_base tool calls the knowledge base."""
-        tools = job_application_agent._build_tools()
+        job_application_agent._build_tools()
 
         # The tool should be registered and callable
         mock_knowledge_base.query.return_value = "Test knowledge"
@@ -80,7 +89,9 @@ class TestJobApplicationAgent:
         # Mock extractor agent
         mock_extract_history = MagicMock()
         mock_extract_history.is_successful.return_value = True
-        mock_extract_history.final_result.return_value = "Looking for Python developer with Django experience."
+        mock_extract_history.final_result.return_value = (
+            "Looking for Python developer with Django experience."
+        )
 
         # Mock application agent
         mock_app_history = MagicMock()
@@ -102,7 +113,9 @@ class TestJobApplicationAgent:
             call_count[0] += 1
             return mock_agent
 
-        with patch('auto_job_application.agents.job_application_agent.Agent', side_effect=agent_factory):
+        with patch(
+            "auto_job_application.agents.job_application_agent.Agent", side_effect=agent_factory
+        ):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         # Should have called both agents
@@ -124,7 +137,9 @@ class TestJobApplicationAgent:
         mock_agent.run = AsyncMock(return_value=mock_extract_history)
         mock_agent.close = AsyncMock()
 
-        with patch('auto_job_application.agents.job_application_agent.Agent', return_value=mock_agent):
+        with patch(
+            "auto_job_application.agents.job_application_agent.Agent", return_value=mock_agent
+        ):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         assert result is None
@@ -141,14 +156,18 @@ class TestJobApplicationAgent:
         mock_agent.run = AsyncMock(return_value=mock_extract_history)
         mock_agent.close = AsyncMock()
 
-        with patch('auto_job_application.agents.job_application_agent.Agent', return_value=mock_agent):
-            result = await job_application_agent.apply_to_job("https://example.com/job/123")
+        with patch(
+            "auto_job_application.agents.job_application_agent.Agent", return_value=mock_agent
+        ):
+            await job_application_agent.apply_to_job("https://example.com/job/123")
 
         # Should use default job description and continue
         job_application_agent.resume_manager.get_best_resume.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_apply_to_job_application_fails(self, job_application_agent, mock_browser_session):
+    async def test_apply_to_job_application_fails(
+        self, job_application_agent, mock_browser_session
+    ):
         """Test job application when application agent fails."""
         # Mock extractor agent
         mock_extract_history = MagicMock()
@@ -173,7 +192,9 @@ class TestJobApplicationAgent:
             call_count[0] += 1
             return mock_agent
 
-        with patch('auto_job_application.agents.job_application_agent.Agent', side_effect=agent_factory):
+        with patch(
+            "auto_job_application.agents.job_application_agent.Agent", side_effect=agent_factory
+        ):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         # Should return the history even if unsuccessful

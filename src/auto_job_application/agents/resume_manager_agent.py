@@ -1,13 +1,15 @@
 from pathlib import Path
-from browser_use.llm import BaseChatModel, ChatGroq, UserMessage
-from pypdf import PdfReader
-from langchain_core.prompts import PromptTemplate
 
-from .base_agent import BaseAgent
+from browser_use.llm import BaseChatModel, ChatGroq, UserMessage
+from langchain_core.prompts import PromptTemplate
+from pypdf import PdfReader
+
+from ..config import RESUME_AGENT_GROQ_MODEL, RESUMES_DIR
 from ..logger_config import get_logger
-from ..config import RESUMES_DIR, RESUME_AGENT_GROQ_MODEL
+from .base_agent import BaseAgent
 
 logger = get_logger(__name__)
+
 
 class ResumeManagerAgent(BaseAgent):
     """
@@ -30,7 +32,7 @@ class ResumeManagerAgent(BaseAgent):
         self.resumes_dir.mkdir(parents=True, exist_ok=True)
         self.resumes: dict[str, str] = {}  # Dictionary mapping file path to extracted text
         super().__init__()
-        
+
         # Initialize an LLM for ranking, or use the one provided
         self.llm = llm or ChatGroq(model=RESUME_AGENT_GROQ_MODEL, temperature=0)
 
@@ -79,12 +81,12 @@ class ResumeManagerAgent(BaseAgent):
         """
         if not self.resumes:
             raise ValueError("No resumes loaded. Please load resumes before calling this method.")
-        
+
         if len(self.resumes) == 1:
-            best_resume = list(self.resumes.keys())[0]
+            best_resume = next(iter(self.resumes.keys()))
             self.logger.info(f"Only one resume found: {Path(best_resume).name}")
             return str(Path(best_resume).absolute())
-        
+
         # Rank resumes against job description using LLM
         prompt_template = PromptTemplate(
             input_variables=["resumes_text", "job_description"],
@@ -97,42 +99,52 @@ Job Description:
 Available Resumes:
 {resumes_text}
 
-Output ONLY the "Resume ID" value of the best matching resume, nothing else. No explanation."""
+Output ONLY the "Resume ID" value of the best matching resume, nothing else. No explanation.""",
         )
 
         resumes_text = ""
         for i, (path, text) in enumerate(self.resumes.items()):
             resumes_text += f"Resume ID: {i}\nFile: {path}\nContent:\n{text[:2000]}\n\n"  # truncating content for context length
-            
+
         try:
-            prompt = prompt_template.format(resumes_text=resumes_text, job_description=job_description[:2000])  # truncating job description
+            prompt = prompt_template.format(
+                resumes_text=resumes_text, job_description=job_description[:2000]
+            )  # truncating job description
             result = await self.llm.ainvoke(messages=[UserMessage(content=prompt)])
-            
+
             selected_id_str = str(result.completion).strip()
             self.logger.info(f"LLM Selected Resume ID: {selected_id_str}")
-            
+
             try:
                 selected_id = int(selected_id_str)
                 selected_path = list(self.resumes.keys())[selected_id]
                 return str(Path(selected_path).absolute())
             except (ValueError, IndexError):
-                self.logger.warning(f"Could not parse or resolve selected ID: {selected_id_str}. Falling back to default.")
-                return str(Path(list(self.resumes.keys())[0]).absolute())
+                self.logger.warning(
+                    f"Could not parse or resolve selected ID: {selected_id_str}. Falling back to default."
+                )
+                return str(Path(next(iter(self.resumes.keys()))).absolute())
         except Exception as e:
-             self.logger.error(f"Error ranking resumes: {e}")
-             return str(Path(list(self.resumes.keys())[0]).absolute())
+            self.logger.error(f"Error ranking resumes: {e}")
+            return str(Path(next(iter(self.resumes.keys()))).absolute())
+
 
 if __name__ == "__main__":
     import asyncio
+
     from dotenv import load_dotenv
+
     load_dotenv()
-    
+
     async def run_test():
         rm = ResumeManagerAgent()
         rm.load_resumes()
         if rm.resumes:
-            best_resume_path = await rm.get_best_resume("Need a Python Django Developer with AWS experience")
+            best_resume_path = await rm.get_best_resume(
+                "Need a Python Django Developer with AWS experience"
+            )
             logger.info(f"Best resume selected: {best_resume_path}")
         else:
             logger.warning("No resumes loaded. Place PDFs in resumes directory to test.")
+
     asyncio.run(run_test())

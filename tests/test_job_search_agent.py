@@ -1,5 +1,6 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 from auto_job_application.agents.job_search_agent import JobSearchAgent
 from auto_job_application.agents.knowledge_base_agent import KnowledgeBaseAgent

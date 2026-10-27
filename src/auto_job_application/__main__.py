@@ -20,7 +20,7 @@ from auto_job_application.session_pool import SessionPool
 logger = setup_logger()
 
 
-async def main() -> None:
+async def _async_main():
     logger.info("Verifying configuration...")
     validate_config(raise_on_error=True)
     logger.info("Configuration is valid.")
@@ -80,5 +80,10 @@ async def main() -> None:
         logger.info("Cleanup completed successfully.")
 
 
+def main() -> None:
+    """Sync entry point for the `apply` console script."""
+    asyncio.run(_async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

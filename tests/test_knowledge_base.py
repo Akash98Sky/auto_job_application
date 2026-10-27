@@ -1,9 +1,10 @@
-import pytest
-import os
-import tempfile
 import asyncio
 import gc
-from unittest.mock import patch, MagicMock
+import os
+import tempfile
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from auto_job_application.agents.knowledge_base_agent import KnowledgeBaseAgent
 

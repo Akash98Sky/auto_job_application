@@ -1,4 +1,5 @@
 import logging
+
 import colorlog
 
 logger = colorlog.getLogger("job_agent")

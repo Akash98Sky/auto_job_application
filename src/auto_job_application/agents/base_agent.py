@@ -1,5 +1,6 @@
 from ..logger_config import get_logger
 
+
 class BaseAgent:
     """
     Standard Base Agent class representing the core interface and shared attributes
