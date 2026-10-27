@@ -1,15 +1,12 @@
 import pytest
-import sys
 import os
 import tempfile
 import asyncio
 import gc
 from unittest.mock import patch, MagicMock
 
-# Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auto_job_application.agents.knowledge_base_agent import KnowledgeBaseAgent
 
-from app.agents.knowledge_base_agent import KnowledgeBaseAgent
 
 @pytest.fixture(autouse=True)
 def run_gc_before_and_after():
@@ -17,6 +14,7 @@ def run_gc_before_and_after():
     gc.collect()
     yield
     gc.collect()
+
 
 def test_knowledge_base_agent_query():
     """Test that the knowledge base agent can retrieve facts."""
@@ -38,6 +36,7 @@ def test_knowledge_base_agent_query():
             del kb
             gc.collect()
 
+
 def test_knowledge_base_agent_load():
     """Test that the knowledge base loads files from directory."""
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -45,7 +44,7 @@ def test_knowledge_base_agent_load():
         mock_file = os.path.join(temp_dir, "skills.txt")
         with open(mock_file, "w", encoding="utf-8") as f:
             f.write("Skills: Python, Django, Cloud Development")
-            
+
         kb = KnowledgeBaseAgent(data_dir=temp_dir)
         try:
             kb.load_from_directory()
@@ -55,10 +54,11 @@ def test_knowledge_base_agent_load():
             del kb
             gc.collect()
 
+
 @pytest.mark.asyncio
 async def test_knowledge_base_agent_query_mocked():
     """Test knowledge base query with mocked memory."""
-    with patch('app.agents.knowledge_base_agent.Memory') as mock_memory_class:
+    with patch('auto_job_application.agents.knowledge_base_agent.Memory') as mock_memory_class:
         mock_memory = MagicMock()
         mock_memory.search.return_value = ["Skill: Python", "Skill: Django"]
         mock_memory_class.return_value = mock_memory
@@ -75,9 +75,10 @@ async def test_knowledge_base_agent_query_mocked():
                 del kb
                 gc.collect()
 
+
 def test_knowledge_base_agent_with_empty_search():
     """Test knowledge base when search returns empty results."""
-    with patch('app.agents.knowledge_base_agent.Memory') as mock_memory_class:
+    with patch('auto_job_application.agents.knowledge_base_agent.Memory') as mock_memory_class:
         mock_memory = MagicMock()
         mock_memory.search.return_value = []
         mock_memory_class.return_value = mock_memory

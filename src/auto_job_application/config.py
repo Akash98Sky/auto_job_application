@@ -25,16 +25,20 @@ RESUME_AGENT_GROQ_MODEL = os.getenv("RESUME_AGENT_GROQ_MODEL", "llama-3.1-8b-ins
 MEM0_LLM_GROQ_MODEL = os.getenv("MEM0_LLM_GROQ_MODEL", "openai/gpt-oss-120b")
 
 # Cohere Model Configuration
+COHERE_BASE_URL = "https://api.cohere.ai/compatibility/v1/"
 COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
+BROWSER_AGENT_COHERE_MODEL = os.getenv(
+    "BROWSER_AGENT_COHERE_MODEL", "command-a-03-2025"
+)
 MEM0_EMBED_COHERE_MODEL = os.getenv("MEM0_EMBED_COHERE_MODEL", "embed-v4.0")
 MEM0_RERANK_COHERE_MODEL = os.getenv("MEM0_RERANK_COHERE_MODEL", "rerank-v4.0-fast")
 MEM0_LLM_COHERE_MODEL = os.getenv("MEM0_LLM_COHERE_MODEL", "command-a-plus-05-2026")
 
 # Nvidia AI Endpoints Configuration
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1/"
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 BROWSER_AGENT_NVIDIA_MODEL = os.getenv(
-    "BROWSER_AGENT_NVIDIA_MODEL", "qwen/qwen3.5-122b-a10b"
+    "BROWSER_AGENT_NVIDIA_MODEL", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 )
 
 

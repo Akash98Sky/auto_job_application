@@ -1,8 +1,12 @@
 [project]
 name = "auto-job-application"
 version = "0.1.0"
-description = "Add your description here"
+description = "Automated job application agent using browser automation and LLMs"
 readme = "README.md"
+authors = [
+    { name = "Akash Mondal", email = "a98mondal@gmail.com" }
+]
+license = { text = "MIT" }
 requires-python = ">=3.13"
 dependencies = [
     "browser-use>=0.12.0,<1.0",
@@ -15,16 +19,99 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=9.0.2", "pytest-asyncio>=0.23.0", "taskipy>=1.2.1", "graphifyy>=0.4.23"]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.23.0",
+    "graphifyy>=0.4.23",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+]
 
-[tool.taskipy.tasks]
-test = "pytest"
-apply = "python main.py"
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
+
+[project.scripts]
+apply = "auto_job_application:main"
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
 ]
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+# Docs: https://docs.astral.sh/ruff/configuration/
+
+[tool.ruff]
+target-version = "py313"
+src = ["src", "tests"]
+line-length = 100
+exclude = ["profile", "user_data"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",   # line-too-long — handled by the formatter
+    "B008",   # function calls in default args (common in Pydantic/LangChain)
+    "RUF012", # mutable class vars — many LangChain classes use them
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["auto_job_application"]
+force-sort-within-sections = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101", # allow assert statements in tests
+    "ANN",  # no annotation requirements in tests
+]
+
+[tool.ruff.format]
+line-ending = "lf"
+docstring-code-format = true
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+# Docs: https://mypy.readthedocs.io/en/stable/config_file.html
+
+[tool.mypy]
+python_version = "3.13"
+mypy_path = "src"
+files = ["src/auto_job_application", "tests"]
+
+# Strictness — opted-in selectively instead of strict = true
+warn_return_any = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+strict_equality = true
+
+# Third-party libs without stubs — covered globally, no per-module repeat needed
+ignore_missing_imports = true
+
+exclude = ["profile/", "user_data/"]
+
+# ── Mypy per-module overrides ─────────────────────────────────────────────────
+
+# Tests — relax strictness slightly
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false

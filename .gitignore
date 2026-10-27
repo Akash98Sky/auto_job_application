@@ -24,3 +24,7 @@ user_data/knowledge_base/qdrant/
 # Graphify cache
 graphify-out/cache/
 user_data/graphs/obsidian/
+
+# Linter / type-checker caches
+.ruff_cache/
+.mypy_cache/

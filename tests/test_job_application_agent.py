@@ -1,15 +1,10 @@
 import pytest
-import sys
-import os
-from unittest.mock import patch, MagicMock, AsyncMock
 from pathlib import Path
+from unittest.mock import patch, MagicMock, AsyncMock
 
-# Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from app.agents.job_application_agent import JobApplicationAgent
-from app.agents.knowledge_base_agent import KnowledgeBaseAgent
-from app.agents.resume_manager_agent import ResumeManagerAgent
+from auto_job_application.agents.job_application_agent import JobApplicationAgent
+from auto_job_application.agents.knowledge_base_agent import KnowledgeBaseAgent
+from auto_job_application.agents.resume_manager_agent import ResumeManagerAgent
 
 
 class TestJobApplicationAgent:
@@ -107,7 +102,7 @@ class TestJobApplicationAgent:
             call_count[0] += 1
             return mock_agent
 
-        with patch('app.agents.job_application_agent.Agent', side_effect=agent_factory):
+        with patch('auto_job_application.agents.job_application_agent.Agent', side_effect=agent_factory):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         # Should have called both agents
@@ -129,7 +124,7 @@ class TestJobApplicationAgent:
         mock_agent.run = AsyncMock(return_value=mock_extract_history)
         mock_agent.close = AsyncMock()
 
-        with patch('app.agents.job_application_agent.Agent', return_value=mock_agent):
+        with patch('auto_job_application.agents.job_application_agent.Agent', return_value=mock_agent):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         assert result is None
@@ -146,7 +141,7 @@ class TestJobApplicationAgent:
         mock_agent.run = AsyncMock(return_value=mock_extract_history)
         mock_agent.close = AsyncMock()
 
-        with patch('app.agents.job_application_agent.Agent', return_value=mock_agent):
+        with patch('auto_job_application.agents.job_application_agent.Agent', return_value=mock_agent):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         # Should use default job description and continue
@@ -178,7 +173,7 @@ class TestJobApplicationAgent:
             call_count[0] += 1
             return mock_agent
 
-        with patch('app.agents.job_application_agent.Agent', side_effect=agent_factory):
+        with patch('auto_job_application.agents.job_application_agent.Agent', side_effect=agent_factory):
             result = await job_application_agent.apply_to_job("https://example.com/job/123")
 
         # Should return the history even if unsuccessful

@@ -1,14 +1,9 @@
 import pytest
-import sys
-import os
 from unittest.mock import patch, MagicMock, AsyncMock
 
-# Add the project root to the path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from app.agents.job_search_agent import JobSearchAgent
-from app.agents.knowledge_base_agent import KnowledgeBaseAgent
-from app.models.llm_responses import JobFitAnalysis
+from auto_job_application.agents.job_search_agent import JobSearchAgent
+from auto_job_application.agents.knowledge_base_agent import KnowledgeBaseAgent
+from auto_job_application.models.llm_responses import JobFitAnalysis
 
 
 class TestJobSearchAgent:
@@ -88,7 +83,7 @@ class TestJobSearchAgent:
         mock_history.is_successful.return_value = True
         mock_history.final_result.return_value = "https://linkedin.com/jobs/1, https://indeed.com/jobs/2"
 
-        with patch('app.agents.job_search_agent.Agent') as mock_agent_class:
+        with patch('auto_job_application.agents.job_search_agent.Agent') as mock_agent_class:
             mock_agent = MagicMock()
             mock_agent.run = AsyncMock(return_value=mock_history)
             mock_agent_class.return_value = mock_agent
@@ -106,7 +101,7 @@ class TestJobSearchAgent:
         mock_history.is_successful.return_value = True
         mock_history.final_result.return_value = ""
 
-        with patch('app.agents.job_search_agent.Agent') as mock_agent_class:
+        with patch('auto_job_application.agents.job_search_agent.Agent') as mock_agent_class:
             mock_agent = MagicMock()
             mock_agent.run = AsyncMock(return_value=mock_history)
             mock_agent_class.return_value = mock_agent
@@ -121,7 +116,7 @@ class TestJobSearchAgent:
         mock_history = MagicMock()
         mock_history.is_successful.return_value = False
 
-        with patch('app.agents.job_search_agent.Agent') as mock_agent_class:
+        with patch('auto_job_application.agents.job_search_agent.Agent') as mock_agent_class:
             mock_agent = MagicMock()
             mock_agent.run = AsyncMock(return_value=mock_history)
             mock_agent_class.return_value = mock_agent
@@ -145,7 +140,7 @@ class TestJobSearchAgent:
         mock_not_fit_response = MagicMock()
         mock_not_fit_response.completion = JobFitAnalysis(is_fit=False, reasoning="Not a match")
 
-        with patch('app.agents.job_search_agent.Agent') as mock_agent_class:
+        with patch('auto_job_application.agents.job_search_agent.Agent') as mock_agent_class:
             mock_agent = MagicMock()
             mock_agent.run = AsyncMock(return_value=mock_history)
             mock_agent_class.return_value = mock_agent

@@ -1,0 +1,72 @@
+{
+  // ── Python ────────────────────────────────────────────────────────────────
+  "languages": {
+    "Python": {
+      // Ruff handles formatting; Pyright handles intellisense + type hints
+      "language_servers": ["pyright", "ruff"],
+      "formatter": {
+        "language_server": { "name": "ruff" }
+      },
+      "format_on_save": "on"
+    }
+  },
+
+  // ── LSP ───────────────────────────────────────────────────────────────────
+  "lsp": {
+    // Pyright — static analysis & intellisense
+    // Docs: https://github.com/microsoft/pyright/blob/main/docs/configuration.md
+    "pyright": {
+      "settings": {
+        "pyright": {
+          "disableOrganizeImports": true // let ruff-isort own imports
+        },
+        "python.analysis": {
+          "extraPaths": ["src"], // src layout awareness
+          "typeCheckingMode": "basic"
+        }
+      }
+    },
+
+    // Ruff — linting + formatting, reads config from pyproject.toml
+    // Docs: https://docs.astral.sh/ruff/editors/
+    "ruff": {
+      "initialization_options": {
+        "settings": {
+          "configurationPreference": "filesystemFirst",
+          "lineLength": 100,
+          "lint": {
+            "enable": true
+          },
+          "format": {
+            "preview": false
+          }
+        }
+      }
+    }
+  },
+
+  // ── Editor ────────────────────────────────────────────────────────────────
+  "tab_size": 4,
+  "hard_tabs": false,
+  "preferred_line_length": 100,
+  "soft_wrap": "preferred_line_length",
+
+  // ── Terminal ──────────────────────────────────────────────────────────────
+  "terminal": {
+    "env": {
+      "VIRTUAL_ENV": ".venv",
+      "PATH": ".venv/Scripts:$PATH"
+    }
+  },
+
+  // ── File exclusions ───────────────────────────────────────────────────────
+  "file_scan_exclusions": [
+    "**/.venv",
+    "**/__pycache__",
+    "**/.ruff_cache",
+    "**/.mypy_cache",
+    "**/.pytest_cache",
+    "**/profile",
+    "**/user_data/knowledge_base/qdrant"
+  ]
+}

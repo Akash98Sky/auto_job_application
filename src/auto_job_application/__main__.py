@@ -1,19 +1,26 @@
+"""Entry point for the auto-job-application package.
+
+Run with:
+    uv run apply
+    python -m auto_job_application
+"""
+
 import asyncio
 
-from app.agents import (
+from auto_job_application.agents import (
     JobApplicationAgent,
     JobSearchAgent,
     KnowledgeBaseAgent,
     ResumeManagerAgent,
 )
-from app.config import validate_config
-from app.logger_config import setup_logger
-from app.session_pool import SessionPool
+from auto_job_application.config import validate_config
+from auto_job_application.logger_config import setup_logger
+from auto_job_application.session_pool import SessionPool
 
 logger = setup_logger()
 
 
-async def main():
+async def main() -> None:
     logger.info("Verifying configuration...")
     validate_config(raise_on_error=True)
     logger.info("Configuration is valid.")
@@ -74,4 +81,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    history = asyncio.run(main())
+    asyncio.run(main())

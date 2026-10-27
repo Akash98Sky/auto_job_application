@@ -1,11 +1,29 @@
 {
+    // ── Python environment ────────────────────────────────────────────────────
     "python.terminal.activateEnvironment": true,
-    "python.terminal.executeInFileDir": true,
     "python.terminal.useEnvFile": true,
+
+    // ── Editor ────────────────────────────────────────────────────────────────
     "editor.semanticHighlighting.enabled": true,
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.ruff": "explicit",
+        "source.organizeImports.ruff": "explicit"
+    },
+
+    // ── Ruff (linter + formatter) ─────────────────────────────────────────────
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "ruff.configurationPreference": "filesystemFirst",
+    "ruff.lint.enable": true,
+    "ruff.format.enable": true,
+
+    // ── Mypy ─────────────────────────────────────────────────────────────────
+    "mypy-type-checker.configFilePath": "${workspaceFolder}/mypy.ini",
+
+    // ── Testing ───────────────────────────────────────────────────────────────
+    "python.testing.pytestArgs": ["tests"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
 }
